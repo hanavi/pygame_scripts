@@ -43,8 +43,16 @@ MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
 def quicksort(data, lo, hi):
     if lo < hi:
         p = partition(data, lo, hi)
+
+        stat = None
+        while stat is None:
+            stat = p.__next__()
+            yield True
+        p = stat
+
         c1 = quicksort(data, lo, p-1)
         c2 = quicksort(data, p+1, hi)
+
         stat = True
         while stat:
             stat = c1.__next__()
@@ -63,8 +71,9 @@ def partition(data, lo, hi):
         if data[j] < pivot:
             data[i], data[j] = data[j], data[i]
             i += 1
+            yield None
     data[i], data[hi] = data[hi], data[i]
-    return i
+    yield i
 
 
 def insertion_sort(data):
@@ -75,7 +84,7 @@ def insertion_sort(data):
         while j > 0 and data[j-1] > data[j]:
             data[j],data[j-1] = data[j-1],data[j]
             j -= 1
-        yield True
+            yield True
         i += 1
 
     yield False
