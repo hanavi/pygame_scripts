@@ -41,11 +41,20 @@ MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
 
 
 def quicksort(data, lo, hi):
-    print("quicksort called")
     if lo < hi:
         p = partition(data, lo, hi)
-        quicksort(data, lo, p-1)
-        quicksort(data, p+1, hi)
+        c1 = quicksort(data, lo, p-1)
+        c2 = quicksort(data, p+1, hi)
+        stat = True
+        while stat:
+            stat = c1.__next__()
+            yield True
+
+        stat = True
+        while stat:
+            stat = c2.__next__()
+            yield True
+    yield False
 
 def partition(data, lo, hi):
     pivot = data[hi]
@@ -76,7 +85,11 @@ def insertion_sort(data):
               help="Show debuggging information")
 @click.option("-g", "--draw-grid", is_flag=True, default=False,
                 help="Draw Base Grid")
-def main(verbose, draw_grid):
+@click.option("-i", "--insertion", is_flag=True, default=False,
+                help="Run Insertion Sort (Default)")
+@click.option("-q", "--quick", is_flag=True, default=False,
+                help="Run Quick Sort")
+def main(verbose, draw_grid, insertion, quick):
 
     if verbose is True:
         logging.basicConfig(level=logging.DEBUG)
@@ -93,13 +106,14 @@ def main(verbose, draw_grid):
     sort_i = 0
     data = list(range(1,MAX_X))
     random.shuffle(data)
-    sort_type = 'insertion'
-    # sort_type = 'quick'
 
     sorting = False
     running = True
-    corou = insertion_sort(data)
-    # corou = quicksort(data, 0, len(data)-1)
+    if quick is True:
+        corou = quicksort(data, 0, len(data)-1)
+    else:
+        corou = insertion_sort(data)
+
     while running:
 
         for event in pygame.event.get():
@@ -111,7 +125,10 @@ def main(verbose, draw_grid):
                     sorting = False if sorting else True
                 elif pygame.mouse.get_pressed() == (0,0,1):
                     random.shuffle(data)
-                    sort_i = 0
+                    if quick is True:
+                        corou = quicksort(data, 0, len(data)-1)
+                    else:
+                        corou = insertion_sort(data)
 
         gDisplay.fill(BLACK)
         if draw_grid is True:
@@ -125,11 +142,7 @@ def main(verbose, draw_grid):
                 pygame.draw.line(gDisplay, WHITE, (0,y), (WIDTH,y),1)
 
         if sorting is True:
-
-            if sort_type == "insertion":
-                sorting = corou.__next__()
-            else:
-                corou.__next__()
+            sorting = corou.__next__()
 
 
         for i, value in enumerate(data):
