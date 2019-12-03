@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """Maze Generator
 
-Filename: mazy.py
+Filename: maze.py
 Author: James Casey
-Date Created:
-Last Updated:
+Date Created: 2019-12-02
+Last Updated: 2019-12-03
 """
 
 import click
@@ -40,31 +40,47 @@ MAX_X = int(WIDTH / SQUARE_SIZE) - 1
 MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
 
 class Square:
+    """ Store unit path information. """
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.pos = [x,y]
+        self.pos = [x, y]
         self.vert = False
         self.horz = False
 
 
 def idx_to_grid(n):
+    """ Convert between array and grid points. (Used in testing) """
+
     x = n %  MAX_Y
     y = int(n / MAX_X)
-    return(x,y)
+    return(x, y)
 
 
 def get_neighbors(start_square, visited=[]):
+    """ Get the valid neighbors of a given square. """
     neighbors = []
 
+    # loop over possible x values
     for i in [start_square.x - 1, start_square.x, start_square.x + 1]:
+
+        # drop neighbors outside of our region of interest
         if i < 0 or i > MAX_X:
             continue
+
+        # loop over possible y values
         for j in [start_square.y - 1, start_square.y, start_square.y + 1]:
+
+            # drop neighbors outside of our region of interest
             if j < 0 or j > MAX_Y:
                 continue
+
+            # Ignore ourself
             if i == start_square.x and j == start_square.y:
                 continue
+
+            # Ignore corner pieces
             if  i == start_square.x - 1 and j !=  start_square.y:
                 continue
             if  i == start_square.x + 1 and j !=  start_square.y:
@@ -73,13 +89,13 @@ def get_neighbors(start_square, visited=[]):
             # Deal with barriers
             found = False
             for square in visited:
-                if square.pos == [i,j]:
+                if square.pos == [i, j]:
                     found = True
                     break
             if found:
                 continue
 
-            neighbors.append(Square(i,j))
+            neighbors.append(Square(i, j))
 
     return neighbors
 
@@ -95,26 +111,33 @@ def main(dbg):
     else:
         logging.basicConfig(level=logging.WARNING)
 
+    # Basic initialization
     pygame.init()
     clock = pygame.time.Clock()
     gDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 
-    start_square = Square(0,0)
-    end_square = Square(MAX_X,MAX_Y)
+    # Start and end points
+    start_square = Square(0, 0)
+    end_square = Square(MAX_X, MAX_Y)
 
+    # Keep track of everything
     visited = [start_square]
     path = [start_square]
+    total_squares = (MAX_X + 1) * (MAX_Y + 1)
 
-    c = 0
+    # The game loop
     running = True
     while running:
 
+        # Check for interactions
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
+        # Set the initial background
         gDisplay.fill(WHITE)
 
+        # Draw the grid
         for i in range(0, int(WIDTH/SQUARE_SIZE)):
             x = SQUARE_SIZE*i
             pygame.draw.line(gDisplay, BLACK, (x, 0), (x, HEIGHT), 2)
@@ -123,19 +146,25 @@ def main(dbg):
             y = SQUARE_SIZE*i
             pygame.draw.line(gDisplay, BLACK, (0, y), (WIDTH, y), 2)
 
-        total_squares = (MAX_X + 1) * (MAX_Y + 1)
-
+        # continue running until we've been to every square
         if len(visited) < total_squares:
-            # pdb.set_trace()
 
+            # loop until we've successfully added a new square to the path
             while True:
+
+                # get the last square visited and it's neighbor
                 last = path.pop()
                 neighbors = get_neighbors(last, visited)
+
+                # Backup if there are no neighbors left for the square
                 if len(neighbors) == 0:
                     continue
+
+                # Pick a neighbor square at random
                 random.shuffle(neighbors)
                 neighbor = neighbors.pop()
 
+                # set the direction of travel for the borders
                 if neighbor.x == last.x:
                     if neighbor.y == last.y + 1:
                         last.vert = True
@@ -148,16 +177,23 @@ def main(dbg):
                     if neighbor.x == last.x - 1:
                         neighbor.horz = True
 
+                # add the last visited back to the path along with the new
+                # square
                 path.append(last)
                 path.append(neighbor)
+
+                # mark the new square as now visited
                 visited.append(neighbor)
+
                 break
 
+        # Draw all of the visited squares
         for square in visited:
 
             x = square.x*SQUARE_SIZE + 2
             y = square.y*SQUARE_SIZE + 2
 
+            # Deal with the borders
             x_step = 2
             y_step = 2
 
@@ -167,11 +203,16 @@ def main(dbg):
             if square.horz is True:
                 x_step = 0
 
-            pygame.draw.rect(gDisplay, CYAN, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
+            pygame.draw.rect(gDisplay, CYAN,
+                    pygame.Rect(x, y,
+                        SQUARE_SIZE - x_step,
+                        SQUARE_SIZE - y_step))
 
+        # Draw the start square green
         x = start_square.x*SQUARE_SIZE + 2
         y = start_square.y*SQUARE_SIZE + 2
 
+        # Deal with the borders
         x_step = 2
         y_step = 2
 
@@ -180,11 +221,14 @@ def main(dbg):
         if start_square.horz is True:
             x_step = 0
 
-        pygame.draw.rect(gDisplay, GREEN, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
+        pygame.draw.rect(gDisplay, GREEN,
+                pygame.Rect(x, y, SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
 
+        # Draw the finish red
         x = end_square.x*SQUARE_SIZE + 2
         y = end_square.y*SQUARE_SIZE + 2
 
+        # Deal with the borders
         x_step = 2
         y_step = 2
 
@@ -193,14 +237,12 @@ def main(dbg):
         if end_square.horz is True:
             x_step = 0
 
-        pygame.draw.rect(gDisplay, RED, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
+        pygame.draw.rect(gDisplay, RED,
+                pygame.Rect(x, y, SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
 
         pygame.display.update()
-        clock.tick(15)
-
-        c += 1
+        clock.tick(30)
 
 
 if __name__ == "__main__":
     main()
-
