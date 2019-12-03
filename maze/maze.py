@@ -35,9 +35,10 @@ YELLOW = (255, 255, 0)
 
 WIDTH=600
 HEIGHT=600
-SQUARE_SIZE = 20
+SQUARE_SIZE = 30
 MAX_X = int(WIDTH / SQUARE_SIZE) - 1
 MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
+
 
 class Square:
     def __init__(self, x, y):
@@ -46,6 +47,91 @@ class Square:
         self.pos = [x,y]
         self.vert = False
         self.horz = False
+
+
+class PathNode:
+    def __init__(self, parent=None, pos=None, start_square=None, end_square=None):
+        debug("generating new node ", pos=pos)
+        self.parent_node = parent
+        self.pos = pos
+        self.start_square = start_square
+        self.end_square = end_square
+
+        self.f = 0
+        self.g = 0
+        self.h = 0
+
+        self.set_h()
+
+    def set_h(self):
+        self.h = ((self.end_square.x - self.pos.x)
+                  + (self.end_square.y - self.pos.y))
+
+    def __repr__(self):
+        return f"<PathNode: {self.pos}>"
+
+
+def find_path(start_square, end_square, clicked_squares):
+
+    open_list = []
+    closed_list = []
+
+    open_list.append(PathNode(parent=None,
+                              pos=start_square,
+                              start_square=start_square,
+                              end_square=end_square))
+
+    searching = True
+    while searching:
+
+        if len(open_list) == 0:
+            break
+
+        open_list = sorted(open_list, key=lambda entry: -entry.g)
+        q = open_list.pop()
+
+        for neighbor in get_neighbors(Square(q.pos.x,q.pos.y), clicked_squares):
+
+            node = PathNode(parent=q,
+                            pos = neighbor,
+                            start_square=start_square,
+                            end_square=end_square)
+            node.g = q.g + 1
+            node.f = node.g + node.h
+
+            if neighbor == end_square:
+                searching = False
+                break
+
+            check_open = False
+            for open_node in open_list:
+                if node.pos == open_node.pos and open_node.f <= node.f:
+                    check_open = True
+                    break
+            if check_open is True:
+                continue
+
+            check_closed = False
+            for closed_node in closed_list:
+                if node.pos == closed_node.pos and closed_node.f <= node.f:
+                    check_closed = True
+                    continue
+            if check_closed is True:
+                continue
+
+            open_list.append(node)
+
+        closed_list.append(q)
+
+    last = node
+
+    best_path = []
+    while True:
+        if last.parent_node is None:
+            break
+        best_path.append(last.pos)
+        last = last.parent_node
+    return best_path
 
 
 def idx_to_grid(n):
@@ -104,6 +190,7 @@ def main(dbg):
 
     visited = [start_square]
     path = [start_square]
+    path_squares = []
 
     c = 0
     running = True
@@ -112,6 +199,10 @@ def main(dbg):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed() == (0,0,1):
+                    path_squares = find_path(start_square, end_square, path)
 
         gDisplay.fill(WHITE)
 
@@ -196,7 +287,7 @@ def main(dbg):
         pygame.draw.rect(gDisplay, RED, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
 
         pygame.display.update()
-        clock.tick(15)
+        clock.tick(30)
 
         c += 1
 
