@@ -4,7 +4,7 @@
 Filename: search.py
 Author: James Casey
 Date Created: 2019-12-02
-Last Updated: 2019-12-02
+Last Updated: 2019-12-03
 """
 
 import click
@@ -35,12 +35,14 @@ YELLOW = (255,255,0)
 
 WIDTH=800
 HEIGHT=600
-SQUARE_SIZE = 20
+SQUARE_SIZE = 40
 MAX_X = int(WIDTH / SQUARE_SIZE) - 1
 MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
 
 
 def square_center(square):
+    """ Get the center of a given square. """
+
     x = square[0]*SQUARE_SIZE + 1 + SQUARE_SIZE / 2
     y = square[1]*SQUARE_SIZE + 1 + SQUARE_SIZE / 2
 
@@ -48,18 +50,29 @@ def square_center(square):
 
 
 def get_neighbors(square, clicked_squares=[], plus_only=False):
-    debug("Square: ", square=square)
+    """ Get a list of the neighbors for a square. """
+
     neighbors = []
 
+    # Loop over the possible x positions
     for i in [square[0] - 1, square[0], square[0] + 1]:
+
+        # make sure we stay in our region
         if i < 0 or i > MAX_X:
             continue
+
+        # Loop over the possible y positions
         for j in [square[1] - 1, square[1], square[1] + 1]:
+
+            # make sure we stay in our region
             if j < 0 or j > MAX_Y:
                 continue
+
+            # skip the given square
             if i == square[0] and j == square[1]:
                 continue
 
+            # Include/Exclude the diagonal paths
             if plus_only is True:
                 if  i == square[0] - 1 and j !=  square[1]:
                     continue
@@ -76,8 +89,10 @@ def get_neighbors(square, clicked_squares=[], plus_only=False):
 
 
 class PathNode:
+    """ Store the path square information. """
+
     def __init__(self, parent=None, pos=None, start_square=None, end_square=None):
-        debug("generating new node ", pos=pos)
+
         self.parent_node = parent
         self.pos = pos
         self.start_square = start_square
@@ -90,6 +105,8 @@ class PathNode:
         self.set_h()
 
     def set_h(self):
+        """ Simple h generator. """
+
         self.h = ((self.end_square[0] - self.pos[0])
                   + (self.end_square[1] - self.pos[1]))
 
@@ -99,6 +116,7 @@ class PathNode:
 
 def find_path(start_square, end_square, clicked_squares, plus_only=False):
 
+    # initial set up
     open_list = []
     closed_list = []
 
@@ -107,17 +125,19 @@ def find_path(start_square, end_square, clicked_squares, plus_only=False):
                               start_square=start_square,
                               end_square=end_square))
 
+    # Run until we've found the path
     searching = True
     while searching:
-        # set_trace()
-        debug("open_list: {} closed_list {}".format(len(open_list), len(closed_list)))
 
+        # Stop when we get have explored all paths
         if len(open_list) == 0:
             break
 
+        # Sort the path nodes to find the shortest so far
         open_list = sorted(open_list, key=lambda entry: -entry.g)
         q = open_list.pop()
 
+        # loop over all the neighbors and update the path information
         for neighbor in get_neighbors(q.pos, clicked_squares, plus_only=plus_only):
 
             node = PathNode(parent=q,
@@ -127,10 +147,13 @@ def find_path(start_square, end_square, clicked_squares, plus_only=False):
             node.g = q.g + 1
             node.f = node.g + node.h
 
+            # Stop searching when we get to the end
             if neighbor == end_square:
                 searching = False
                 break
 
+            # check to see if we already have the node in the open list with
+            # a better f value
             check_open = False
             for open_node in open_list:
                 if node.pos == open_node.pos and open_node.f <= node.f:
@@ -139,6 +162,8 @@ def find_path(start_square, end_square, clicked_squares, plus_only=False):
             if check_open is True:
                 continue
 
+            # check to see if we already have the node in the closed list with
+            # a better f value
             check_closed = False
             for closed_node in closed_list:
                 if node.pos == closed_node.pos and closed_node.f <= node.f:
@@ -147,13 +172,16 @@ def find_path(start_square, end_square, clicked_squares, plus_only=False):
             if check_closed is True:
                 continue
 
+            # if we make it this far, add the neighbor node to the open list
             open_list.append(node)
 
+        # add the node to the closed list
         closed_list.append(q)
 
     # open_list = sorted(open_list, key=lambda entry: -entry.g)
     last = node
 
+    # build the path backwards from finish to start
     best_path = []
     while True:
         if last.parent_node is None:
@@ -177,15 +205,12 @@ def main(verbose, plus_only, draw_neighbors):
     else:
         logging.basicConfig(level=logging.WARNING)
 
+    # initialize everything
     pygame.init()
     pygame.font.init()
-    # myfont = pygame.font.SysFont('couriernewbold', 32)
 
     gDisplay = pygame.display.set_mode((WIDTH,HEIGHT))
     clock = pygame.time.Clock()
-
-    # List fonts real quick
-    # print(pygame.font.get_fonts())
 
     start_square = [1,1]
     end_square = [MAX_X-1,MAX_Y-1]
@@ -196,36 +221,46 @@ def main(verbose, plus_only, draw_neighbors):
     running = True
     while running:
 
+        # Check for interaction
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
+            # Mouse interactions here
             if event.type == pygame.MOUSEBUTTONDOWN:
+
+                # Add/Remove a barrier
                 if pygame.mouse.get_pressed() == (1,0,0):
                     pos = pygame.mouse.get_pos()
                     x = pos[0]
                     y = pos[1]
                     new_square = [int(x/SQUARE_SIZE),int(y/SQUARE_SIZE)]
 
+                    # Draw neighbors of the clicked square as well
+                    # this is mostly for testing purposes
                     if draw_neighbors is True:
                         neighbors = get_neighbors(new_square,
                                 plus_only=plus_only)
 
+                    # Don't do anything to the start/end squares
                     if new_square == start_square or new_square == end_square:
                         continue
 
+                    # toggle the barrier on or off
                     if new_square in clicked_squares:
                         clicked_squares.remove(new_square)
                     else:
                         clicked_squares.append(new_square)
 
+                # Run the search
                 elif pygame.mouse.get_pressed() == (0,0,1):
                     path_squares = find_path(start_square, end_square,
                             clicked_squares, plus_only)
                     neighbors = []
 
-
         gDisplay.fill(BLACK)
+
+        # Draw the grid
         for i in range(1,int(WIDTH/SQUARE_SIZE)):
             x = SQUARE_SIZE*i
             pygame.draw.line(gDisplay, WHITE, (x,0), (x,HEIGHT),1)
@@ -240,8 +275,8 @@ def main(verbose, plus_only, draw_neighbors):
             for square in path_squares[::-1]:
                 x = square[0]*SQUARE_SIZE + 1
                 y = square[1]*SQUARE_SIZE + 1
-                pygame.draw.rect(gDisplay, YELLOW, pygame.Rect(x,y,SQUARE_SIZE - 1,
-                    SQUARE_SIZE - 1))
+                pygame.draw.rect(gDisplay, YELLOW,
+                        pygame.Rect(x,y,SQUARE_SIZE - 1, SQUARE_SIZE - 1))
                 pygame.draw.line(gDisplay, RED,
                         (square_center(last_square)),
                         (square_center(square)), 2)
