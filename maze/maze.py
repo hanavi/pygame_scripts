@@ -35,7 +35,7 @@ YELLOW = (255, 255, 0)
 
 WIDTH=600
 HEIGHT=600
-SQUARE_SIZE = 30
+SQUARE_SIZE = 20
 MAX_X = int(WIDTH / SQUARE_SIZE) - 1
 MAX_Y = int(HEIGHT / SQUARE_SIZE) - 1
 
@@ -100,6 +100,7 @@ def main(dbg):
     gDisplay = pygame.display.set_mode((WIDTH, HEIGHT))
 
     start_square = Square(0,0)
+    end_square = Square(MAX_X,MAX_Y)
 
     visited = [start_square]
     path = [start_square]
@@ -167,6 +168,32 @@ def main(dbg):
                 x_step = 0
 
             pygame.draw.rect(gDisplay, CYAN, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
+
+        x = start_square.x*SQUARE_SIZE + 2
+        y = start_square.y*SQUARE_SIZE + 2
+
+        x_step = 2
+        y_step = 2
+
+        if start_square.vert is True:
+            y_step = 0
+        if start_square.horz is True:
+            x_step = 0
+
+        pygame.draw.rect(gDisplay, GREEN, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
+
+        x = end_square.x*SQUARE_SIZE + 2
+        y = end_square.y*SQUARE_SIZE + 2
+
+        x_step = 2
+        y_step = 2
+
+        if end_square.vert is True:
+            y_step = 0
+        if end_square.horz is True:
+            x_step = 0
+
+        pygame.draw.rect(gDisplay, RED, pygame.Rect(x,y,SQUARE_SIZE - x_step, SQUARE_SIZE - y_step))
 
         pygame.display.update()
         clock.tick(15)
