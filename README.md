@@ -10,7 +10,10 @@ This is a simple implementation of the A* algorithm on a grid. Barriers (in blue
 
 
 ## sorting.py
+
 Sort visualizer
+
+![quick sort demo](images/sorting.png)
 
 ## maze.py
 
